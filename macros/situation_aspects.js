@@ -1,8 +1,9 @@
 /**
  * Макрос для полного управления ситуативными аспектами на сцене.
  *
- * ВЕРСИЯ 4.0
- * - ИЗМЕНЕНО: Настройки теперь берутся из отдельной страницы журнала
+ * ВЕРСИЯ 4.1 (Foundry 12 fix)
+ * - ИСПРАВЛЕНО: Проблема сложения free_invokes как строка
+ * - ИСПРАВЛЕНО: Совместимость с Foundry V12 API
  */
 
 // --- СИСТЕМНЫЕ КОНСТАНТЫ ---
@@ -14,11 +15,11 @@ const WIDGET_FLAG_KEY = "situationAspectsWidget";
 const SETTINGS_JOURNAL_NAME = "Настройки Макросов";
 
 // --- ФУНКЦИИ ДЛЯ ПОЛУЧЕНИЯ НАСТРОЕК ---
-const getSettingsJournal = async () => {
+async function getSettingsJournal() {
   return game.journal.getName(SETTINGS_JOURNAL_NAME);
-};
+}
 
-const getModuleSettings = async (moduleName) => {
+async function getModuleSettings(moduleName) {
   const journal = await getSettingsJournal();
   if (!journal) return {};
 
@@ -31,10 +32,10 @@ const getModuleSettings = async (moduleName) => {
     console.error(`Ошибка парсинга настроек для ${moduleName}:`, e);
     return {};
   }
-};
+}
 
 // --- ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ НАСТРОЕК ВИДЖЕТА ---
-const getWidgetSettings = async () => {
+async function getWidgetSettings() {
   const sitAspectSettings = await getModuleSettings("SitAspectManager");
 
   return {
@@ -42,52 +43,46 @@ const getWidgetSettings = async () => {
     size: sitAspectSettings.widgetSize || { width: 500, height: 800 },
     font: sitAspectSettings.widgetFont || { family: "BadScript", size: 32 }
   };
-};
+}
 
 /**
  * Главная функция, которая строит и отображает менеджер аспектов.
  */
-const showAspectManager = async () => {
-  const existingDialog = Object.values(ui.windows).find(
-    (w) => w.id === DIALOG_ID,
-  );
+async function showAspectManager() {
+  const existingDialog = Object.values(ui.windows).find(w => w.id === DIALOG_ID);
   if (existingDialog) {
     existingDialog.bringToTop();
     return;
   }
 
-  // Получаем настройки из журнала
   const widgetSettings = await getWidgetSettings();
 
-  // Используем настройки в макросе
-  const WIDGET_POSITION = widgetSettings.position;
-  const WIDGET_SIZE = widgetSettings.size;
-  const WIDGET_FONT_FAMILY = widgetSettings.font.family;
-  const WIDGET_FONT_SIZE = widgetSettings.font.size;
-
-  let aspects = foundry.utils.duplicate(
-    canvas.scene.getFlag(FLAG_SCOPE, FLAG_KEY) || [],
+  let aspects = foundry.utils.deepClone(
+    canvas.scene.getFlag(FLAG_SCOPE, FLAG_KEY) || []
   );
 
-  const redrawAspectList = (dialogHtml) => {
+  // Убеждаемся, что free_invokes — число
+  aspects = aspects.map(a => ({
+    ...a,
+    free_invokes: Number(a.free_invokes) || 0,
+  }));
+
+  function redrawAspectList(dialogHtml) {
     let aspectListHtml = "";
     if (aspects.length > 0) {
       aspectListHtml = aspects
-        .map(
-          (aspect, index) => `
-        <div class="aspect-row">
-          <button class="rename-btn" data-index="${index}" title="Переименовать аспект"><i class="fas fa-edit"></i></button>
-          <button class="delete-btn" data-index="${index}" title="Удалить аспект"><i class="fas fa-trash"></i></button>
-          <span class="aspect-name">${aspect.name}</span>
-          <div class="aspect-controls">
-            <button class="invoke-btn" data-index="${index}" data-action="take"><i class="fas fa-minus"></i></button>
-            <span class="invoke-count">${aspect.free_invokes}</span>
-            <button class="invoke-btn" data-index="${index}" data-action="give"><i class="fas fa-plus"></i></button>
+        .map((aspect, index) => `
+          <div class="aspect-row">
+            <button class="rename-btn" data-index="${index}" title="Переименовать аспект"><i class="fas fa-edit"></i></button>
+            <button class="delete-btn" data-index="${index}" title="Удалить аспект"><i class="fas fa-trash"></i></button>
+            <span class="aspect-name">${aspect.name}</span>
+            <div class="aspect-controls">
+              <button class="invoke-btn" data-index="${index}" data-action="take"><i class="fas fa-minus"></i></button>
+              <span class="invoke-count">${aspect.free_invokes}</span>
+              <button class="invoke-btn" data-index="${index}" data-action="give"><i class="fas fa-plus"></i></button>
+            </div>
           </div>
-        </div>
-      `,
-        )
-        .join("");
+        `).join("");
     } else {
       aspectListHtml = `<p style="text-align:center; opacity:0.7;">Нет активных ситуативных аспектов.</p>`;
     }
@@ -99,25 +94,21 @@ const showAspectManager = async () => {
       const idx = parseInt(index, 10);
       if (aspects[idx]) {
         aspects[idx].free_invokes += action === "give" ? 1 : -1;
-        if (aspects[idx].free_invokes < 0) aspects[idx].free_invokes = 0;
+        aspects[idx].free_invokes = Math.max(0, aspects[idx].free_invokes);
         redrawAspectList(dialogHtml);
       }
     });
 
     dialogHtml.find(".delete-btn").on("click", (event) => {
       const indexToDelete = parseInt(event.currentTarget.dataset.index, 10);
-      promptForDeletion(aspects, indexToDelete, () =>
-        redrawAspectList(dialogHtml),
-      );
+      promptForDeletion(aspects, indexToDelete, () => redrawAspectList(dialogHtml));
     });
 
     dialogHtml.find(".rename-btn").on("click", (event) => {
       const indexToRename = parseInt(event.currentTarget.dataset.index, 10);
-      promptForRename(aspects, indexToRename, () =>
-        redrawAspectList(dialogHtml),
-      );
+      promptForRename(aspects, indexToRename, () => redrawAspectList(dialogHtml));
     });
-  };
+  }
 
   const content = `
     <style>
@@ -140,8 +131,7 @@ const showAspectManager = async () => {
     </div>
   `;
 
-  new Dialog(
-    {
+  new Dialog({
       title: "Менеджер ситуативных аспектов",
       content: content,
       buttons: {
@@ -165,73 +155,58 @@ const showAspectManager = async () => {
         });
       },
     },
-    { id: DIALOG_ID, width: 400 },
+    { id: DIALOG_ID, width: 400 }
   ).render(true);
-};
+}
 
 // --- ФУНКЦИЯ ДЛЯ УПРАВЛЕНИЯ ВИДЖЕТОМ ---
-
-const updateWidgetOnScene = async (aspects) => {
-  // Получаем настройки из журнала
+async function updateWidgetOnScene(aspects) {
   const widgetSettings = await getWidgetSettings();
   const WIDGET_POSITION = widgetSettings.position;
   const WIDGET_SIZE = widgetSettings.size;
   const WIDGET_FONT_FAMILY = widgetSettings.font.family;
   const WIDGET_FONT_SIZE = widgetSettings.font.size;
 
-  const existingWidget = canvas.scene.drawings.find((d) =>
-    d.getFlag(WIDGET_FLAG_SCOPE, WIDGET_FLAG_KEY),
+  const existingWidget = canvas.scene.drawings.find(d =>
+    d.getFlag(WIDGET_FLAG_SCOPE, WIDGET_FLAG_KEY)
   );
+
   const fullText = aspects
-    .map((a) => `${a.name} (${a.free_invokes})`)
+    .map(a => `${a.name} (${a.free_invokes})`)
     .join("\n\n");
+
+  const widgetData = {
+    text: fullText,
+    x: WIDGET_POSITION.x,
+    y: WIDGET_POSITION.y,
+    fontSize: WIDGET_FONT_SIZE,
+    fontFamily: WIDGET_FONT_FAMILY,
+    textColor: "#000000",
+    shape: {
+      width: WIDGET_SIZE.width,
+      height: WIDGET_SIZE.height
+    },
+    flags: {
+      [WIDGET_FLAG_SCOPE]: { [WIDGET_FLAG_KEY]: true },
+      adt: { dropShadow: false, fontWeight: 800 },
+      "advanced-drawing-tools": {
+        textStyle: { dropShadow: false, align: "center", fontWeight: 800, strokeThickness: 0 }
+      }
+    }
+  };
+
   if (existingWidget) {
-    await existingWidget.update({
-      text: fullText,
-      x: WIDGET_POSITION.x,
-      y: WIDGET_POSITION.y,
-      fontSize: WIDGET_FONT_SIZE,
-      fontFamily: WIDGET_FONT_FAMILY,
-      textColor: "#000000",
-      "shape.width": WIDGET_SIZE.width,
-      "shape.height": WIDGET_SIZE.height,
-      "flags.adt.dropShadow": false,
-      "flags.advanced-drawing-tools.textStyle.dropShadow": false,
-      "flags.advanced-drawing-tools.textStyle.fontWeight": 800,
-      "flags.advanced-drawing-tools.textStyle.strokeThickness": 0,
-    });
+    await existingWidget.update(widgetData);
     ui.notifications.info("Виджет аспектов на сцене обновлен.");
   } else {
-    const drawingData = {
-      type: 2,
-      x: WIDGET_POSITION.x,
-      y: WIDGET_POSITION.y,
-      text: fullText,
-      fontSize: WIDGET_FONT_SIZE,
-      fontFamily: WIDGET_FONT_FAMILY,
-      textColor: "#000000",
-      fillType: 0,
-      strokeWidth: 0,
-      shape: {
-        width: WIDGET_SIZE.width,
-        height: WIDGET_SIZE.height,
-      },
-      flags: {
-        [WIDGET_FLAG_SCOPE]: { [WIDGET_FLAG_KEY]: true },
-        adt: { dropShadow: false, fontWeight: 800 },
-        "advanced-drawing-tools": {
-          textStyle: { dropShadow: false, align: "center", fontWeight: 800, strokeThickness: 0 },
-        },
-      },
-    };
-    await canvas.scene.createEmbeddedDocuments("Drawing", [drawingData]);
+    await canvas.scene.createEmbeddedDocuments("Drawing", [widgetData]);
     ui.notifications.info("Виджет аспектов создан на сцене.");
   }
-};
+}
 
 // --- ВСПОМОГАТЕЛЬНЫЕ ДИАЛОГИ ---
 
-const promptForNewAspect = (currentAspects, onUpdateCallback) => {
+function promptForNewAspect(currentAspects, onUpdateCallback) {
   const content = `
     <form>
       <div class="form-group">
@@ -243,6 +218,7 @@ const promptForNewAspect = (currentAspects, onUpdateCallback) => {
         <input type="number" name="invokes" value="1" min="0">
       </div>
     </form>`;
+
   new Dialog({
     title: "Добавить ситуативный аспект",
     content: content,
@@ -251,29 +227,30 @@ const promptForNewAspect = (currentAspects, onUpdateCallback) => {
         icon: '<i class="fas fa-check"></i>',
         label: "Добавить",
         callback: (html) => {
-          const name = html.find('[name="name"]').val();
-          const invokes = parseInt(html.find('[name="invokes"]').val(), 10);
+          const name = html.find('[name="name"]').val().trim();
+          const invokes = parseInt(html.find('[name="invokes"]').val(), 10) || 0;
           if (!name) return ui.notifications.warn("Название не может быть пустым.");
           currentAspects.push({ name: name, free_invokes: invokes });
           onUpdateCallback();
-        },
-      },
+        }
+      }
     },
-    default: "create",
+    default: "create"
   }).render(true);
-};
+}
 
-const promptForDeletion = (currentAspects, indexToDelete, onUpdateCallback) => {
+function promptForDeletion(currentAspects, indexToDelete, onUpdateCallback) {
   const aspectToDelete = currentAspects[indexToDelete];
   if (!aspectToDelete) return;
+
   Dialog.confirm({
     title: "Удалить аспект",
     content: `<p>Вы уверены, что хотите удалить аспект "<strong>${aspectToDelete.name}</strong>"?</p>`,
     yes: async () => {
       currentAspects.splice(indexToDelete, 1);
       if (aspectToDelete.name) {
-        const drawing = canvas.scene.drawings.find((d) =>
-          d.text?.startsWith(aspectToDelete.name),
+        const drawing = canvas.scene.drawings.find(d =>
+          d.text?.startsWith(aspectToDelete.name)
         );
         if (drawing) {
           await canvas.scene.deleteEmbeddedDocuments("Drawing", [drawing.id]);
@@ -282,13 +259,14 @@ const promptForDeletion = (currentAspects, indexToDelete, onUpdateCallback) => {
       onUpdateCallback();
     },
     no: () => {},
-    defaultYes: false,
+    defaultYes: false
   });
-};
+}
 
-const promptForRename = (currentAspects, indexToRename, onUpdateCallback) => {
+function promptForRename(currentAspects, indexToRename, onUpdateCallback) {
   const oldName = currentAspects[indexToRename]?.name;
   if (!oldName) return;
+
   const content = `
     <form>
       <div class="form-group">
@@ -296,6 +274,7 @@ const promptForRename = (currentAspects, indexToRename, onUpdateCallback) => {
         <input type="text" name="newName" value="${oldName}" />
       </div>
     </form>`;
+
   new Dialog({
     title: "Переименование аспекта",
     content: content,
@@ -311,12 +290,12 @@ const promptForRename = (currentAspects, indexToRename, onUpdateCallback) => {
           }
           currentAspects[indexToRename].name = newName;
           onUpdateCallback();
-        },
-      },
+        }
+      }
     },
-    default: "rename",
+    default: "rename"
   }).render(true);
-};
+}
 
-// Запуск основной функции
+// --- ЗАПУСК ---
 showAspectManager();
