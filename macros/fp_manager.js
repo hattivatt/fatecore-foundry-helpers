@@ -74,8 +74,10 @@ const getFPManagerSettings = async () => {
       }
     },
     tileOffsets: {
-      stepX: parseInt(fpSettings.stepX) || 20,
-      stepY: parseInt(fpSettings.stepY) || 20,
+      gmstepX: parseInt(fpSettings.gmstepX) || 0,
+      gmstepY: parseInt(fpSettings.gmstepY) || 0,
+      playerstepX: parseInt(fpSettings.playerstepX) || 0,
+      playerstepY: parseInt(fpSettings.playerstepY) || 0,
       tileSize: {
         width: parseInt(fpSettings.tileWidth) || 70,
         height: parseInt(fpSettings.tileHeight) || 70
@@ -487,8 +489,8 @@ const syncSinglePlayer = async (playerName, playerConfig, fpSettings) => {
   await syncTiles(pointsInSheet, existingTiles, {
     x: config.startPos.x,
     y: config.startPos.y,
-    stepX: 0,
-    stepY: fpSettings.tileOffsets.stepY,
+    stepX: fpSettings.tileOffsets.playerstepX,
+    stepY: fpSettings.tileOffsets.playerstepY,
     flagKey: PLAYER_FLAG_KEY,
     flagValue: playerName,
     imagePath: fpSettings.fatePointImage,
@@ -506,8 +508,8 @@ const syncGmPoints = async (fpSettings) => {
   await syncTiles(pointsInSheet, existingTiles, {
     x: fpSettings.gmConfig.startPos.x,
     y: fpSettings.gmConfig.startPos.y,
-    stepX: fpSettings.tileOffsets.stepX,
-    stepY: 0,
+    stepX: fpSettings.tileOffsets.gmstepX,
+    stepY: fpSettings.tileOffsets.gmstepY,
     flagKey: GM_FLAG_KEY,
     flagValue: true,
     imagePath: fpSettings.fatePointImage,
@@ -521,7 +523,7 @@ const syncTiles = async (targetCount, existingTiles, options) => {
     const tilesToCreateData = [];
     for (let i = 0; i < difference; i++) {
       const index = existingTiles.length + i;
-      const newX = options.x - index * options.stepX;
+      const newX = options.x + index * options.stepX;
       const newY = options.y + index * options.stepY;
       tilesToCreateData.push({
         texture: { src: options.imagePath },

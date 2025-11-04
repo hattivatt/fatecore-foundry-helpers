@@ -59,13 +59,23 @@ const FP_MANAGER_CONFIG = {
       type: "number",
       default: 2220,
     },
-    stepX: {
-      label: "Отступ жетонов по X",
+    gmstepX: {
+      label: "Отступ мастерских жетонов по X",
       type: "number",
       default: 20,
     },
-    stepY: {
-      label: "Отступ жетонов по Y",
+    gmstepY: {
+      label: "Отступ мастерских жетонов по Y",
+      type: "number",
+      default: 20,
+    },
+    playerstepX: {
+      label: "Отступ жетонов игроков по X",
+      type: "number",
+      default: 20,
+    },
+    playerstepY: {
+      label: "Отступ жетонов игроков по Y",
       type: "number",
       default: 20,
     },
@@ -567,7 +577,7 @@ const showModuleSettings = async (moduleConfig) => {
   let formContent = `<form><div class="form-group"><h2>${moduleConfig.label}</h2></div>`;
 
   for (const [key, setting] of Object.entries(moduleConfig.settings)) {
-    const currentValue = currentSettings[key] !== undefined ? currentSettings[key] : setting.default;
+    const currentValue = currentSettings[key] ?? setting.default;
     let inputHtml = '';
 
     switch (setting.type) {
@@ -610,10 +620,13 @@ const showModuleSettings = async (moduleConfig) => {
                 updatedSettings[key] = currentSettings[key] || setting.default;
                 break;
               case 'number':
-                updatedSettings[key] = parseInt(html.find(`[name="${key}"]`).val()) || setting.default;
+                const rawValue = html.find(`[name="${key}"]`).val();
+                const parsedValue = parseInt(rawValue, 10);
+                updatedSettings[key] = isNaN(parsedValue) ? setting.default : parsedValue;
                 break;
               case 'text':
-                updatedSettings[key] = html.find(`[name="${key}"]`).val() || setting.default;
+                const val = html.find(`[name="${key}"]`).val();
+                updatedSettings[key] = val !== '' ? val : setting.default;
                 break;
               default:
                 updatedSettings[key] = html.find(`[name="${key}"]`).val() || setting.default;

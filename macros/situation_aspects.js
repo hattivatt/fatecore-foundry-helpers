@@ -39,9 +39,18 @@ async function getWidgetSettings() {
   const sitAspectSettings = await getModuleSettings("SitAspectManager");
 
   return {
-    position: sitAspectSettings.widgetPosition || { x: 960, y: 1415 },
-    size: sitAspectSettings.widgetSize || { width: 500, height: 800 },
-    font: sitAspectSettings.widgetFont || { family: "BadScript", size: 32 }
+    position: {
+      x: parseInt(sitAspectSettings.widgetPositionX) || 960,
+      y: parseInt(sitAspectSettings.widgetPositionY) || 1415,
+    },
+    size: {
+      width: parseInt(sitAspectSettings.widgetWidth) || 500,
+      height: parseInt(sitAspectSettings.widgetHeight) || 800,
+    },
+    font: {
+      family: sitAspectSettings.widgetFontFamily || "BadScript",
+      size: parseInt(sitAspectSettings.widgetFontSize) || 32,
+    }
   };
 }
 
