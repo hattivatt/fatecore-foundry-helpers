@@ -126,6 +126,11 @@ const SIT_ASPECT_CONFIG = {
       label: "Виджет - Размер шрифта",
       type: "number",
       default: 32,
+    },
+    widgetTextColor: {
+      label: "Виджет - Цвет Текста",
+      type: "text",
+      default: "#000000",
     }
   }
 };
@@ -179,6 +184,11 @@ const PLAYER_WIDGET_CONFIG = {
       label: "Семейство шрифта",
       type: "text",
       default: "Montserrat",
+    },
+    textColor: {
+      label: "Цвет Линий",
+      type: "text",
+      default: "#000000",
     },
 
     // Настройки навыков
@@ -468,6 +478,11 @@ const CHALLENGE_CONTEST_CONFIG = {
       type: "text",
       default: "#ffffff",
     },
+    challengeTextColor: {
+      label: "Цвет текста для вызовов",
+      type: "text",
+      default: "#000000",
+    },
 
     // Contest settings
     contestFontFamily: {
@@ -489,6 +504,11 @@ const CHALLENGE_CONTEST_CONFIG = {
       label: "Цвет фона для состязаний",
       type: "text",
       default: "#ffffff",
+    },
+    contestTextColor: {
+      label: "Цвет текста для вызовов",
+      type: "text",
+      default: "#000000",
     },
   }
 };

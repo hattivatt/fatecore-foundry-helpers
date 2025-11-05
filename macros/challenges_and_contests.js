@@ -185,7 +185,7 @@ const runMacro = async () => {
 
         const fontSize = settings.challengeFontSize;
         const fontFamily = settings.challengeFontFamily;
-        const textColor = "#000000";
+        const textColor = settings.challengeTextColor;
         const textWidth = 500;
         const textHeight = tasks.length * 90;
         const checkbox = "[   ]";
@@ -319,7 +319,7 @@ const runMacro = async () => {
 
         const fontSize = settings.contestFontSize;
         const fontFamily = settings.contestFontFamily;
-        const textColor = "#000000";
+        const textColor = settings.contestTextColor;
         const textWidth = 700;
         const textHeight = 60;
         const checkbox = "[   ]";

@@ -50,7 +50,8 @@ async function getWidgetSettings() {
     font: {
       family: sitAspectSettings.widgetFontFamily || "BadScript",
       size: parseInt(sitAspectSettings.widgetFontSize) || 32,
-    }
+    },
+    textColor: sitAspectSettings.widgetTextColor || "#000000",
   };
 }
 
@@ -190,7 +191,10 @@ async function updateWidgetOnScene(aspects) {
     y: WIDGET_POSITION.y,
     fontSize: WIDGET_FONT_SIZE,
     fontFamily: WIDGET_FONT_FAMILY,
-    textColor: "#000000",
+    textColor: widgetSettings.textColor,
+    fillType: 0,        // Нет фона
+    strokeColor: null,  // Нет цвета обводки
+    strokeWidth: 0,     // Нет ширины линии
     shape: {
       width: WIDGET_SIZE.width,
       height: WIDGET_SIZE.height

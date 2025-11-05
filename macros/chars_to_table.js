@@ -172,25 +172,25 @@ async function processPart(actor, partType, pos, content, positionKey, settings)
         size = { width: settings.skillNameSizeWidth, height: settings.skillNameSizeHeight };
         fSize = settings.skillNameFontSize;
         fFamily = settings.skillNameFont;
-        sWidth = 2; sColor = "#000000";
+        sWidth = 2; sColor = settings.textColor;
       } else if (partType.startsWith("skillValue")) {
         size = { width: settings.skillValueSizeWidth, height: settings.skillValueSizeHeight };
         fSize = settings.skillValueFontSize;
         fFamily = settings.skillValueFont;
         extra.fontWeight = 800;
-        sWidth = 2; sColor = "#000000";
+        sWidth = 2; sColor = settings.textColor;
       } else if (partType.startsWith("stressBox")) {
         size = { width: settings.stressBoxSizeWidth, height: settings.stressBoxSizeHeight };
         fSize = settings.stressFontSize;
         fFamily = settings.stressFontFamily;
         sWidth = settings.stressLineWidth;
-        sColor = "#000000";
+        sColor = settings.textColor;
         extra.align = "center";
       }
       u.text           = content.text;
       u.fontSize       = fSize;
       u.fontFamily     = fFamily;
-      u.textColor      = "#000000";
+      u.textColor      = settings.textColor;
       u.fillType       = 0;
       u.strokeWidth    = sWidth;
       if (sColor) u.strokeColor = sColor;
@@ -242,19 +242,19 @@ async function processPart(actor, partType, pos, content, positionKey, settings)
         size = { width: settings.skillNameSizeWidth, height: settings.skillNameSizeHeight };
         fSize = settings.skillNameFontSize;
         fFamily = settings.skillNameFont;
-        sWidth = 2; sColor = "#000000";
+        sWidth = 2; sColor = settings.textColor;
       } else if (partType.startsWith("skillValue")) {
         size = { width: settings.skillValueSizeWidth, height: settings.skillValueSizeHeight };
         fSize = settings.skillValueFontSize;
         fFamily = settings.skillValueFont;
         extra.fontWeight = 800;
-        sWidth = 2; sColor = "#000000";
+        sWidth = 2; sColor = settings.textColor;
       } else if (partType.startsWith("stressBox")) {
         size = { width: settings.stressBoxSizeWidth, height: settings.stressBoxSizeHeight };
         fSize = settings.stressFontSize;
         fFamily = settings.stressFontFamily;
         sWidth = settings.stressLineWidth;
-        sColor = "#000000";
+        sColor = settings.textColor;
         extra.align = "center";
       }
       d = {
@@ -263,7 +263,7 @@ async function processPart(actor, partType, pos, content, positionKey, settings)
         text       : content.text,
         fontSize   : fSize,
         fontFamily : fFamily,
-        textColor  : "#000000",
+        textColor  : settings.textColor,
         fillType   : 0,
         strokeWidth: sWidth,
         ...(sColor ? { strokeColor: sColor } : {}),
